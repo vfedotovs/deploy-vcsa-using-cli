@@ -1,3 +1,5 @@
+
+```sh
 ovftool --acceptAllEulas --noSSLVerify --skipManifestCheck \
 --name="VLSR-Appliance-01" \
 --datastore="Your-Datastore" \
@@ -10,15 +12,24 @@ ovftool --acceptAllEulas --noSSLVerify --skipManifestCheck \
 --prop:vami.DNS.VLSR-Appliance="192.168.1.10" \
 "VMware-Live-Recovery-Appliance-9.0.5.ova" \
 "vi://administrator@vsphere.local:password@vcenter-fqdn/Datacenter/host/Cluster"
-
+```
 
 Postdeployment REST api call tasks
 
-Phase 1: Register Appliance to vCenterBefore you can pair sites, the appliance must be "attached" to its local vCenter. This is done via the Appliance Management API (typically on port 5480).1. Authenticate to the ApplianceBash# Get an authentication token using the 'admin' credentials set during OVA deployment
+Phase 1: 
+Register Appliance to vCenterBefore you can pair sites, the appliance must be "attached" to its local vCenter. 
+This is done via the Appliance Management API (typically on port 5480).
+
+1. Authenticate to the ApplianceBash
+2. # Get an authentication token using the 'admin' credentials set during OVA deployment
+```sh
 curl -X POST "https://<appliance-ip>:5480/api/v1/session" \
      -u "admin:<password>" \
      -k -i
-2. Configure vCenter Connection (PSC Registration)This step mimics the "Reconfigure" button in the UI.Bashcurl -X POST "https://<appliance-ip>:5480/api/v1/configure" \
+```
+3. Configure vCenter Connection (PSC Registration)This step mimics the "Reconfigure" button in the UI.
+```sh
+curl -X POST "https://<appliance-ip>:5480/api/v1/configure" \
      -H "Content-Type: application/json" \
      -d '{
        "psc_hostname": "vcenter-01.example.com",
@@ -28,10 +39,19 @@ curl -X POST "https://<appliance-ip>:5480/api/v1/session" \
        "site_name": "Protected-Site-A",
        "extension_id": "com.vmware.vcDr"
      }' -k
-Phase 2: Establish Site PairingOnce both appliances (Protected and Recovery) are registered to their respective vCenters, you use the SRM REST API Gateway (typically on port 443) to link them.1. Login to the SRM APIBashcurl -X POST "https://<appliance-ip>/api/rest/srm/v1/session" \
+```
+
+Phase 2: Establish Site PairingOnce both appliances (Protected and Recovery) are registered to their respective vCenters,
+you use the SRM REST API Gateway (typically on port 443) to link them.
+```sh
+1. Login to the SRM APIBashcurl -X POST "https://<appliance-ip>/api/rest/srm/v1/session" \
      -u "administrator@vsphere.local:<password>" \
      -k
-Note: This returns an x-dr-session token in the header. You must include this in subsequent calls.2. Create the Site PairYou must call this on the Protected Site appliance, pointing to the Recovery Site vCenter/SRM.Bashcurl -X POST "https://<protected-srm-ip>/api/rest/srm/v1/pairings" \
+```
+Note: This returns an x-dr-session token in the header. You must include this in subsequent calls.
+2. Create the Site PairYou must call this on the Protected Site appliance, pointing to the Recovery Site vCenter/SRM
+```sh
+curl -X POST "https://<protected-srm-ip>/api/rest/srm/v1/pairings" \
      -H "x-dr-session: <your-session-id>" \
      -H "Content-Type: application/json" \
      -d '{
@@ -40,4 +60,14 @@ Note: This returns an x-dr-session token in the header. You must include this in
        "remote_sso_admin_user": "administrator@vsphere.local",
        "remote_sso_admin_password": "recovery-vcenter-password"
      }' -k
-Summary of EndpointsTaskAPI EndpointPortAppliance Auth/api/v1/session5480vCenter Registration/api/v1/configure5480SRM Operations Auth/api/rest/srm/v1/session443Site Pairing/api/rest/srm/v1/pairings443
+```
+Summary of Endpoints
+```sh
+TaskAPI       | Endpoint                | Port | Appliance 
+Auth            /api/v1/session           5480   vCenter
+Registration    /api/v1/configure         5480   SRM 
+Operations Auth /api/rest/srm/v1/session  443
+Site Pairing    /api/rest/srm/v1/pairings 443
+```
+
+
